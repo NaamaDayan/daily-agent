@@ -1,0 +1,68 @@
+# ── Secrets & configuration ────────────────────────────────────────────────────
+config.yaml          # contains API keys — NEVER commit this
+.env
+*.key
+*.pem
+
+# ── Python bytecode ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+.env/
+typing-capture/.venv/
+
+# ── Test & coverage artifacts ──────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# ── Build artifacts ────────────────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+
+# ── Logs (runtime output, not source) ─────────────────────────────────────────
+logs/
+*.log
+
+# ── macOS system files ─────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V2
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ── Editor / IDE ───────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cursor/
+
+# ── Runtime data directories (outside the repo, listed for documentation) ──────
+# The following paths live outside this repo and are never committed:
+#   ~/.daily-agent/plans/      saved plan files
+#   ~/.daily-agent/pending/    raw data from failed runs
+#   ~/.daily-agent/micro/      30-minute micro-summary JSONL files
+#   ~/.typing-log/             typing daemon output
+
+# ── Temporary / scratch files ─────────────────────────────────────────────────
+summarization_prompts/   # LLM prompt debug dumps (may contain sensitive text)
+*.tmp
+*.temp
+/tmp/
+scratch/
+.scratch/

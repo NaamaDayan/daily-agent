@@ -1,0 +1,138 @@
+{
+  "date": "2026-05-29",
+
+  "typing": [
+    {
+      "timestamp": "2026-05-29T07:48:22+00:00",
+      "app": "Google Chrome",
+      "bundle_id": "com.google.Chrome",
+      "window_title": "claude.ai - Claude",
+      "text": "how should I design the Stage 1A cursor pre-summarizer? what model should I use and what should the prompt look like?",
+      "_mode": "full",
+      "_original_chars": 117
+    },
+    {
+      "timestamp": "2026-05-29T07:55:10+00:00",
+      "app": "Google Chrome",
+      "bundle_id": "com.google.Chrome",
+      "window_title": "claude.ai - Claude",
+      "text": "ok so for Stage 1B the timeline builder — should I merge events by timestamp or by app? what gap threshold makes sense?",
+      "_mode": "full",
+      "_original_chars": 120
+    },
+    {
+      "timestamp": "2026-05-29T11:33:41+00:00",
+      "app": "Cursor",
+      "bundle_id": "com.todesktop.230313mzl4w4u92",
+      "window_title": "summarizer.py — daily_agent",
+      "text": "def build_timeline(typing_entries, activitywatch, cursor_presummaries):",
+      "_mode": "full",
+      "_original_chars": 71
+    },
+    {
+      "timestamp": "2026-05-29T09:12:05+00:00",
+      "app": "Notion",
+      "bundle_id": "com.notion.mac",
+      "window_title": "Daily Plans - Plan VS Actual",
+      "_mode": "charcount",
+      "_original_chars": 340
+    }
+  ],
+
+  "activitywatch": {
+    "by_app": [
+      {"app": "Cursor",         "minutes": 135, "category": "dev"},
+      {"app": "Google Chrome",  "minutes":  65, "category": "browser"},
+      {"app": "Notion",         "minutes":  20, "category": "writing"},
+      {"app": "Zoom",           "minutes":  55, "category": "meetings"}
+    ],
+    "by_domain": [
+      {"domain": "claude.ai",   "minutes": 50},
+      {"domain": "notion.so",   "minutes": 12},
+      {"domain": "github.com",  "minutes":  8}
+    ],
+    "total_active_minutes": 275,
+    "total_idle_minutes": 45,
+    "raw_events": [
+      {
+        "app": "Cursor",
+        "title": "summarizer.py — daily_agent",
+        "domain": null,
+        "start_iso": "2026-05-29T06:15:00+00:00",
+        "end_iso":   "2026-05-29T07:02:00+00:00",
+        "duration_seconds": 2820
+      },
+      {
+        "app": "Google Chrome",
+        "title": "claude.ai - Claude",
+        "domain": "claude.ai",
+        "start_iso": "2026-05-29T07:30:00+00:00",
+        "end_iso":   "2026-05-29T08:35:00+00:00",
+        "duration_seconds": 3900
+      },
+      {
+        "app": "Notion",
+        "title": "Daily Plans - Plan VS Actual",
+        "domain": null,
+        "start_iso": "2026-05-29T09:00:00+00:00",
+        "end_iso":   "2026-05-29T09:22:00+00:00",
+        "duration_seconds": 1320
+      },
+      {
+        "app": "Zoom",
+        "title": "Architecture Review — Daily Agent",
+        "domain": null,
+        "start_iso": "2026-05-29T10:00:00+00:00",
+        "end_iso":   "2026-05-29T10:55:00+00:00",
+        "duration_seconds": 3300
+      },
+      {
+        "app": "Cursor",
+        "title": "summarizer.py — daily_agent",
+        "domain": null,
+        "start_iso": "2026-05-29T11:05:00+00:00",
+        "end_iso":   "2026-05-29T13:20:00+00:00",
+        "duration_seconds": 8100
+      },
+      {
+        "app": "Google Chrome",
+        "title": "collect_activitywatch.py - GitHub",
+        "domain": "github.com",
+        "start_iso": "2026-05-29T13:25:00+00:00",
+        "end_iso":   "2026-05-29T13:40:00+00:00",
+        "duration_seconds": 900
+      }
+    ]
+  },
+
+  "cursor_sessions": [
+    {
+      "session_id": "cs-abc123",
+      "workspace": "daily_agent",
+      "started_at": "2026-05-29T06:15:00+00:00",
+      "user_turns": [
+        "I want to build a two-stage summarizer pipeline. Stage 1A should pre-summarize each Cursor session using a cheap haiku model. What's the best prompt structure?",
+        "Good. Now for Stage 1B — the timeline builder — I want to merge ActivityWatch raw events with typing entries. The key challenge is matching typing entries to AW segments by timestamp AND bundle_id. How should I handle the bundle_id to app-name mapping?",
+        "The _BUNDLE_TO_AW_APP dict approach makes sense. One concern: what if AW isn't running and raw_events is empty? Should the timeline just have synthetic Cursor segments?",
+        "Perfect. Let's also add the token budget enforcement in build_prompt — if the timeline exceeds max_timeline_tokens, drop charcount segments first, then truncate typing lists. Implement this in _render_timeline_section."
+      ],
+      "turn_count": 4
+    }
+  ],
+
+  "meetings": [
+    {
+      "title": "Architecture Review — Daily Agent",
+      "time": "13:00",
+      "summary": "Reviewed the two-stage summarizer design with the team. Key decisions: (1) Use claude-haiku for Stage 1A Cursor pre-summarizer — faster and cheaper for mechanical condensing. (2) Timeline builder merges same-app events within 60-second gaps, drops segments under 3 minutes. (3) Token budget enforcement drops charcount-only segments first, then truncates typing lists. Action item: implement and test with real ActivityWatch data this week."
+    }
+  ],
+
+  "context": {
+    "general": "Building a personal daily productivity agent that runs locally on macOS. The agent collects computer activity (typing logs, ActivityWatch, Cursor sessions, Notion meetings), synthesizes a daily summary via Claude API, and delivers it to Telegram at 8 PM. Currently in active build phase — completing the pipeline modules.",
+    "today": {
+      "plan": "Build pipeline/summarizer.py with two-stage approach\nAdd get_events_date() to collect_activitywatch.py\nCreate test fixture and run --test mode\nUpdate run_daily.py to use new summarize() signature",
+      "actual": ""
+    }
+  }
+}

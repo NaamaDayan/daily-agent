@@ -1,0 +1,7 @@
+anthropic>=0.28.0
+notion-client>=2.1.0,<2.6
+requests>=2.31.0
+pyyaml>=6.0.1
+python-telegram-bot>=21.0
+pytz>=2024.1
+rich>=13.0.0
