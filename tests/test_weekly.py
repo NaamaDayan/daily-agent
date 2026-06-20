@@ -64,3 +64,45 @@ class TestGetAllProjectPages:
 
         from collectors.collect_project_pages import get_all_project_pages
         assert get_all_project_pages() == []
+
+
+# ── Task 2: get_all_tasks ────────────────────────────────────────────────────
+
+class TestGetAllTasks:
+    @patch("collectors.collect_tasks.get_notion")
+    def test_returns_all_statuses(self, mock_get_notion):
+        mock_notion = MagicMock()
+        mock_get_notion.return_value = mock_notion
+        mock_notion.databases.query.return_value = {
+            "results": [
+                {
+                    "id": "page1",
+                    "properties": {
+                        "Task Name": {"type": "title", "title": [{"plain_text": "Write tests"}]},
+                        "Status": {"type": "select", "select": {"name": "📋 Backlog"}},
+                        "Priority": {"type": "select", "select": {"name": "P2 Medium"}},
+                        "Project": {"type": "relation", "relation": []},
+                        "Estimated Duration": {"type": "number", "number": None},
+                        "Notes": {"type": "rich_text", "rich_text": []},
+                        "Target Count": {"type": "number", "number": None},
+                        "Recurrence": {"type": "select", "select": None},
+                        "Scheduled Date": {"type": "date", "date": None},
+                    }
+                }
+            ],
+            "has_more": False,
+        }
+
+        from collectors.collect_tasks import get_all_tasks
+        result = get_all_tasks()
+
+        assert len(result) == 1
+        assert result[0]["task_name"] == "Write tests"
+        assert result[0]["status"] == "📋 Backlog"
+
+    @patch("collectors.collect_tasks.get_notion")
+    def test_returns_empty_on_api_error(self, mock_get_notion):
+        mock_get_notion.side_effect = Exception("timeout")
+
+        from collectors.collect_tasks import get_all_tasks
+        assert get_all_tasks() == []
