@@ -66,3 +66,4 @@ summarization_prompts/   # LLM prompt debug dumps (may contain sensitive text)
 /tmp/
 scratch/
 .scratch/
+.superpowers/            # Claude Code task execution state
