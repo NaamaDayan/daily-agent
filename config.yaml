@@ -47,6 +47,7 @@ telegram_chat_id: "972428891"            # your personal chat ID (get from @user
 typing_log_dir: "~/typing-logs"
 plans_dir: "~/.daily-agent/plans"
 learning_dir: "~/.daily-agent/learning"
+weekly_plans_dir: "~/.daily-agent/weekly-plans"
 learning_few_shot_count: 5      # how many past days to inject as examples
 learning_enabled: true
 agent_log_dir: "~/daily-agent/logs"

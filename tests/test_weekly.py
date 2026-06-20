@@ -106,3 +106,50 @@ class TestGetAllTasks:
 
         from collectors.collect_tasks import get_all_tasks
         assert get_all_tasks() == []
+
+
+# ── Task 3: weekly_store ───────────────────────────────────────────────────────
+
+class TestWeeklyStore:
+    WEEK_START = datetime.date(2026, 6, 15)
+    SAMPLE_PLAN = {
+        "week": "2026-W25",
+        "week_start": "2026-06-15",
+        "week_end": "2026-06-21",
+        "generated_at": "2026-06-20T21:00:00+00:00",
+        "week_summary": "Good week.",
+        "highlights": ["Shipped weekly pipeline"],
+        "projects": [
+            {
+                "project_name": "Daily Agent",
+                "project_page_id": "pid1",
+                "weekly_goals": [
+                    {"goal": "Complete approval flow", "rationale": "Core UX", "priority": "high"}
+                ],
+            }
+        ],
+    }
+
+    def test_save_and_load_roundtrip(self, tmp_path):
+        with patch("pipeline.weekly_store._weekly_plans_dir", return_value=tmp_path):
+            from pipeline.weekly_store import save_weekly_plan, load_weekly_plan
+            save_weekly_plan(self.SAMPLE_PLAN, self.WEEK_START)
+            loaded = load_weekly_plan(self.WEEK_START)
+
+        assert loaded is not None
+        assert loaded["week"] == "2026-W25"
+        assert loaded["projects"][0]["project_name"] == "Daily Agent"
+
+    def test_load_missing_returns_none(self, tmp_path):
+        with patch("pipeline.weekly_store._weekly_plans_dir", return_value=tmp_path):
+            from pipeline.weekly_store import load_weekly_plan
+            result = load_weekly_plan(self.WEEK_START)
+        assert result is None
+
+    def test_get_current_weekly_plan_returns_latest(self, tmp_path):
+        with patch("pipeline.weekly_store._weekly_plans_dir", return_value=tmp_path):
+            from pipeline.weekly_store import save_weekly_plan, get_current_weekly_plan
+            save_weekly_plan(self.SAMPLE_PLAN, self.WEEK_START)
+            result = get_current_weekly_plan()
+        assert result is not None
+        assert result["week"] == "2026-W25"
