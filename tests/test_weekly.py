@@ -153,3 +153,80 @@ class TestWeeklyStore:
             result = get_current_weekly_plan()
         assert result is not None
         assert result["week"] == "2026-W25"
+
+
+# ── Task 4: weekly_planner ────────────────────────────────────────────────────
+
+class TestWeeklyPlanner:
+    WEEK_START = datetime.date(2026, 6, 15)
+
+    @patch("pipeline.weekly_planner.load_pending")
+    def test_load_week_day_summaries_reads_pending_files(self, mock_load):
+        def side_effect(date):
+            return {
+                "current": {
+                    "day_theme": f"Worked on {date}",
+                    "done": [{"task_name": "t1"}],
+                    "unfinished": [],
+                }
+            }
+        mock_load.side_effect = side_effect
+
+        from pipeline.weekly_planner import load_week_day_summaries
+        result = load_week_day_summaries(self.WEEK_START)
+
+        # Mon(15) through Sat(20) = 6 days
+        assert len(result) == 6
+        assert result[0]["date"] == "2026-06-15"
+        assert "Worked on" in result[0]["day_theme"]
+
+    @patch("pipeline.weekly_planner.load_pending")
+    def test_load_week_day_summaries_skips_missing(self, mock_load):
+        mock_load.return_value = None
+
+        from pipeline.weekly_planner import load_week_day_summaries
+        result = load_week_day_summaries(self.WEEK_START)
+
+        assert result == []
+
+    @patch("pipeline.weekly_planner._call_week_summary_llm")
+    @patch("pipeline.weekly_planner._call_project_plan_llm")
+    @patch("pipeline.weekly_planner.load_week_day_summaries")
+    def test_run_weekly_planning_returns_schema(
+        self, mock_summaries, mock_project_llm, mock_week_llm
+    ):
+        mock_summaries.return_value = [
+            {"date": "2026-06-15", "day_theme": "Good day", "done_count": 2, "unfinished_count": 1}
+        ]
+        mock_week_llm.return_value = {
+            "week_summary": "Productive week.",
+            "highlights": ["Shipped weekly store"],
+        }
+        mock_project_llm.return_value = {
+            "weekly_goals": [
+                {"goal": "Finish planner", "rationale": "Core feature", "priority": "high"}
+            ]
+        }
+
+        project_pages = [
+            {
+                "page_id": "pid1", "name": "Daily Agent", "goal": "g",
+                "current_focus": "c", "priority": "P1 High", "status": "🟢 Active",
+                "full_text": "Context here.", "unprocessed_tasks": "Add dark mode",
+            }
+        ]
+
+        from pipeline.weekly_planner import run_weekly_planning
+        result = run_weekly_planning(
+            week_start=self.WEEK_START,
+            general_context="I work 60% on Daily Agent.",
+            week_tasks=[],
+            all_tasks=[],
+            project_pages=project_pages,
+        )
+
+        assert result["week"] == "2026-W25"
+        assert result["week_summary"] == "Productive week."
+        assert len(result["projects"]) == 1
+        assert result["projects"][0]["project_name"] == "Daily Agent"
+        assert result["projects"][0]["weekly_goals"][0]["goal"] == "Finish planner"

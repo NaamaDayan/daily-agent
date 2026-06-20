@@ -7,6 +7,9 @@ anthropic_model: "claude-sonnet-4-6"
 anthropic_max_tokens: 2500
 anthropic_cursor_presummary_model: "claude-haiku-4-5-20251001"  # cheaper model for Stage 1A
 anthropic_cursor_presummary_max_tokens: 200
+weekly_summary_model: "claude-haiku-4-5-20251001"
+weekly_planner_model: "claude-sonnet-4-6"
+weekly_planner_max_tokens: 1000
 
 
 # Classification thresholds (pipeline/classifier.py)
