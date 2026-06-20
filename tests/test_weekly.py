@@ -279,3 +279,61 @@ class TestTelegramWeekly:
         from delivery.telegram_weekly import send_weekly_messages
         send_weekly_messages(self.PLAN)
         assert mock_send.call_count == 2
+
+
+# ── Task 6: run_weekly ────────────────────────────────────────────────────────
+
+class TestRunWeekly:
+    WEEK_START = datetime.date(2026, 6, 15)
+
+    @patch("pipeline.run_weekly._collect_parallel")
+    @patch("pipeline.run_weekly.run_weekly_planning")
+    @patch("pipeline.run_weekly.save_weekly_plan")
+    @patch("pipeline.run_weekly.send_weekly_messages")
+    def test_run_dry_run_does_not_send(
+        self, mock_send, mock_save, mock_plan, mock_collect
+    ):
+        mock_collect.return_value = {
+            "general_context": "ctx",
+            "week_tasks": [],
+            "all_tasks": [],
+            "project_pages": [],
+        }
+        mock_plan.return_value = {
+            "week": "2026-W25", "week_start": "2026-06-15", "week_end": "2026-06-21",
+            "generated_at": "now", "week_summary": "Good week.", "highlights": [],
+            "projects": [],
+        }
+
+        from pipeline.run_weekly import run
+        exit_code = run(self.WEEK_START, dry_run=True)
+
+        assert exit_code == 0
+        mock_send.assert_not_called()
+        mock_save.assert_not_called()
+
+    @patch("pipeline.run_weekly._collect_parallel")
+    @patch("pipeline.run_weekly.run_weekly_planning")
+    @patch("pipeline.run_weekly.save_weekly_plan")
+    @patch("pipeline.run_weekly.send_weekly_messages")
+    def test_run_sends_and_saves_on_success(
+        self, mock_send, mock_save, mock_plan, mock_collect
+    ):
+        mock_collect.return_value = {
+            "general_context": "ctx",
+            "week_tasks": [],
+            "all_tasks": [],
+            "project_pages": [],
+        }
+        mock_plan.return_value = {
+            "week": "2026-W25", "week_start": "2026-06-15", "week_end": "2026-06-21",
+            "generated_at": "now", "week_summary": "Good week.", "highlights": [],
+            "projects": [],
+        }
+
+        from pipeline.run_weekly import run
+        exit_code = run(self.WEEK_START, dry_run=False)
+
+        assert exit_code == 0
+        mock_send.assert_called_once()
+        mock_save.assert_called_once()
