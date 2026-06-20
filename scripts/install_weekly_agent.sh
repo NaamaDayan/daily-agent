@@ -28,7 +28,7 @@ cat > "$PLIST" <<EOF
   <key>StartCalendarInterval</key>
   <dict>
     <key>Weekday</key>
-    <integer>7</integer>
+    <integer>6</integer>
     <key>Hour</key>
     <integer>21</integer>
     <key>Minute</key>
