@@ -230,3 +230,52 @@ class TestWeeklyPlanner:
         assert len(result["projects"]) == 1
         assert result["projects"][0]["project_name"] == "Daily Agent"
         assert result["projects"][0]["weekly_goals"][0]["goal"] == "Finish planner"
+
+
+# ── Task 5: telegram_weekly ───────────────────────────────────────────────────
+
+class TestTelegramWeekly:
+    PLAN = {
+        "week": "2026-W25",
+        "week_start": "2026-06-15",
+        "week_end": "2026-06-21",
+        "generated_at": "2026-06-20T21:00:00+00:00",
+        "week_summary": "Strong week. Shipped the weekly store.",
+        "highlights": ["Weekly store", "Project page collector"],
+        "projects": [
+            {
+                "project_name": "Daily Agent",
+                "project_page_id": "pid1",
+                "weekly_goals": [
+                    {"goal": "Complete approval flow", "rationale": "Core UX", "priority": "high"},
+                    {"goal": "Write tests", "rationale": "Quality", "priority": "medium"},
+                ],
+            }
+        ],
+    }
+
+    def test_summary_message_contains_week_and_theme(self):
+        from delivery.telegram_weekly import format_weekly_summary_message
+        msg = format_weekly_summary_message(self.PLAN)
+        assert "W25" in msg
+        assert "Strong week" in msg
+        assert "Weekly store" in msg
+
+    def test_plan_message_contains_project_and_goals(self):
+        from delivery.telegram_weekly import format_weekly_plan_message
+        msg = format_weekly_plan_message(self.PLAN)
+        assert "Daily Agent" in msg
+        assert "Complete approval flow" in msg
+        assert "W26" in msg  # next week
+
+    def test_plan_message_no_projects_shows_notice(self):
+        from delivery.telegram_weekly import format_weekly_plan_message
+        plan = {**self.PLAN, "projects": []}
+        msg = format_weekly_plan_message(plan)
+        assert "no projects" in msg.lower() or "No projects" in msg
+
+    @patch("delivery.telegram_weekly._send_md")
+    def test_send_weekly_messages_calls_send_twice(self, mock_send):
+        from delivery.telegram_weekly import send_weekly_messages
+        send_weekly_messages(self.PLAN)
+        assert mock_send.call_count == 2
