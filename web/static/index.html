@@ -108,17 +108,30 @@ async function load() {
 function makeTaskCard(task, bucket) {
   const card = document.createElement('div');
   card.className = 'task-card';
-  card.dataset.taskName = task.task_name || task.suggested_name || '';
+  const taskName = task.task_name || task.suggested_name || '';
   card.dataset.taskJson = JSON.stringify(task);
-  card.innerHTML = `
-    <span class="drag-handle">⠿</span>
-    <textarea class="task-name" rows="1">${card.dataset.taskName}</textarea>
-    <button class="delete-btn" onclick="this.closest('.task-card').remove()">✕</button>
-  `;
-  const ta = card.querySelector('textarea');
+
+  const handle = document.createElement('span');
+  handle.className = 'drag-handle';
+  handle.textContent = '⠿';
+
+  const ta = document.createElement('textarea');
+  ta.className = 'task-name';
+  ta.rows = 1;
+  ta.value = taskName;
   ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; });
-  ta.style.height = 'auto';
-  ta.style.height = ta.scrollHeight + 'px';
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'delete-btn';
+  deleteBtn.textContent = '✕';
+  deleteBtn.onclick = () => card.remove();
+
+  card.appendChild(handle);
+  card.appendChild(ta);
+  card.appendChild(deleteBtn);
+
+  requestAnimationFrame(() => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; });
+
   return card;
 }
 
