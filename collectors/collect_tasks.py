@@ -273,57 +273,28 @@ def get_this_week_tasks(date: datetime.date | None = None) -> list[dict]:
         return []
 
 
-def get_all_tasks() -> list[dict]:
+def get_all_tasks(project_name: str | None = None) -> list[dict]:
     """
-    Return ALL tasks from the Tasks DB regardless of status.
+    Return all non-Done tasks from the Tasks DB.
 
-    Same schema as get_today_tasks() with an additional 'status' field.
-    Returns [] on any error.
+    If project_name is given, filter to tasks where project matches
+    (case-insensitive). Useful for per-project daily planning context.
     """
     cfg = get_config()
     db_id: str = cfg["notion_tasks_db_id"]
-
+    filter_body = {
+        "property": "Status",
+        "select": {"does_not_equal": "✅ Done"},
+    }
+    sorts = [{"property": "Priority", "direction": "ascending"}]
     try:
-        notion = get_notion()
-        results: list[dict] = []
-        cursor: str | None = None
-
-        while True:
-            kwargs: dict = {
-                "database_id": db_id,
-                "page_size": 100,
-                "sorts": [{"property": "Priority", "direction": "ascending"}],
-            }
-            if cursor:
-                kwargs["start_cursor"] = cursor
-            resp = notion.databases.query(**kwargs)
-            results.extend(resp.get("results", []))
-            if not resp.get("has_more"):
-                break
-            cursor = resp.get("next_cursor")
-
-        tasks: list[dict] = []
-        for page in results:
-            props = page.get("properties", {})
-            relation = props.get("Project", {}).get("relation", [])
-            project_name = (
-                _resolve_project_name(relation[0]["id"]) if relation else ""
-            )
-            tasks.append({
-                "page_id":            page["id"],
-                "task_name":          _title_str(props.get("Task Name", {})),
-                "status":             _select_name(props.get("Status", {})),
-                "project":            project_name,
-                "priority":           _select_name(props.get("Priority", {})),
-                "estimated_minutes":  _number_val(props.get("Estimated Duration", {})),
-                "notes":              _rich_text_str(props.get("Notes", {})),
-                "target_count":       _number_val(props.get("Target Count", {})) or 1,
-                "recurrence":         _select_name(props.get("Recurrence", {})) or "None",
-            })
-
-        log.info("get_all_tasks: %d tasks (all statuses)", len(tasks))
+        pages = _query_all(db_id, filter_body, sorts)
+        tasks = [_page_to_task(p) for p in pages]
+        if project_name:
+            target = project_name.strip().lower()
+            tasks = [t for t in tasks if t["project"].strip().lower() == target]
+        log.info("get_all_tasks(project=%r): %d task(s)", project_name, len(tasks))
         return tasks
-
     except Exception as exc:
         log.warning("get_all_tasks failed: %s", exc)
         return []
