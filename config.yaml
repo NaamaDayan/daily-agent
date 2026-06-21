@@ -48,6 +48,10 @@ notion_general_context_page_title: "General Context"
 telegram_bot_token: "8944063258:AAFde4YCBs5SQuzO81RBTVbs_Ss9A8I65Cc"          # from @BotFather
 telegram_chat_id: "972428891"            # your personal chat ID (get from @userinfobot)
 
+# ── Web review UI ──────────────────────────────────────────────────────────────
+web_port: 8080
+web_base_url: ""
+
 # ── Paths ──────────────────────────────────────────────────────────────────────
 typing_log_dir: "~/typing-logs"
 plans_dir: "~/.daily-agent/plans"
