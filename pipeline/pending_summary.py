@@ -101,7 +101,7 @@ def save_pending(classification: dict, date: datetime.date | None = None) -> Non
     date = _resolve_date(date)
     record = {
         "date": date.isoformat(),
-        "status": "awaiting_approval",
+        "status": "active",
         "created_at": _now_iso(),
         "approved_at": None,
         "version": 1,
@@ -150,7 +150,7 @@ def find_active_pending_date() -> datetime.date | None:
         record = load_pending(d)
         if not record:
             continue
-        if record.get("status") != "awaiting_approval":
+        if record.get("status") not in ("active", "awaiting_approval"):
             continue
         if is_expired(d):
             continue
@@ -271,8 +271,33 @@ def apply_edit(edit_instruction: str, date: datetime.date | None = None) -> dict
     return new_current
 
 
-def save_approved(date: datetime.date | None = None) -> dict:
-    """Set status=approved, approved_at=now. Returns the full pending record."""
+def update_current(classification: dict, date: datetime.date | None = None) -> dict:
+    """
+    Directly replace current with a new classification (no LLM). Used by the
+    web UI approve endpoint which sends the full updated state.
+    Increments version and saves history snapshot.
+    """
+    if date is None:
+        date = find_active_pending_date() or _resolve_date(None)
+    record = load_pending(date)
+    if not record:
+        raise ValueError(f"No pending summary for {date}")
+    current = copy.deepcopy(record["current"])
+    version = int(record.get("version", 1))
+    record["history"].append({
+        "version": version,
+        "edit_instruction": "web_ui_approve",
+        "snapshot": current,
+    })
+    record["version"] = version + 1
+    record["current"] = _normalize_classification(classification)
+    _write_file(record, date)
+    log.info("Pending summary updated (direct) for %s → v%d", date, record["version"])
+    return record["current"]
+
+
+def save_reviewed(date: datetime.date | None = None) -> dict:
+    """Set status=reviewed, reviewed_at=now. Returns the full pending record."""
     if date is None:
         date = find_active_pending_date() or _resolve_date(None)
 
@@ -280,8 +305,11 @@ def save_approved(date: datetime.date | None = None) -> dict:
     if not record:
         raise ValueError(f"No pending summary for {date}")
 
-    record["status"] = "approved"
-    record["approved_at"] = _now_iso()
+    record["status"] = "reviewed"
+    record["reviewed_at"] = _now_iso()
     _write_file(record, date)
-    log.info("Pending summary approved for %s (v%d)", date, record.get("version", 1))
+    log.info("Pending summary reviewed for %s (v%d)", date, record.get("version", 1))
     return record
+
+
+save_approved = save_reviewed  # backward compat
