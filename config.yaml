@@ -9,6 +9,8 @@ anthropic_cursor_presummary_model: "claude-haiku-4-5-20251001"  # cheaper model 
 anthropic_cursor_presummary_max_tokens: 200
 weekly_summary_model: "claude-haiku-4-5-20251001"
 weekly_planner_model: "claude-sonnet-4-6"
+daily_planner_model: "claude-haiku-4-5-20251001"   # cheaper model for Stage 6
+daily_planner_max_tokens: 1000
 weekly_planner_max_tokens: 1000
 
 

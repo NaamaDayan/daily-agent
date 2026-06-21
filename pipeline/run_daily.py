@@ -376,6 +376,94 @@ def _format_task_checklist(today_tasks: list[dict]) -> str:
     return "\n".join(lines)
 
 
+# ── Stage 6: Daily Plan ───────────────────────────────────────────────────────
+
+def _plan_tomorrow(
+    result: dict,
+    date: datetime.date,
+    data: dict,
+    *,
+    dry_run: bool,
+) -> None:
+    """
+    Stage 6: generate per-project tasks for tomorrow and send as a second Telegram message.
+
+    Non-fatal — exceptions are logged but do not change the pipeline exit code.
+    Runs in both live and dry-run modes.
+    """
+    import os
+    log.info("=== Stage 6: Daily Plan ===")
+
+    from pipeline.weekly_store import get_current_weekly_plan
+    from delivery.telegram_daily_plan import (
+        NO_WEEKLY_PLAN_MSG, format_daily_plan_message, send_daily_plan,
+    )
+
+    tomorrow = date + datetime.timedelta(days=1)
+    detail = os.environ.get("DAILY_PLAN_DETAIL", "medium").lower()
+
+    # 6A: load weekly plan
+    weekly_plan = get_current_weekly_plan()
+    if weekly_plan is None:
+        log.warning("Stage 6: no weekly plan found — sending fallback message")
+        if dry_run:
+            print(NO_WEEKLY_PLAN_MSG)
+        else:
+            from delivery.telegram_send import send_text
+            send_text(NO_WEEKLY_PLAN_MSG)
+        return
+
+    # 6B: collect project pages
+    try:
+        from collectors.collect_project_pages import get_all_project_pages
+        project_pages = get_all_project_pages()
+    except Exception as exc:
+        log.warning("Stage 6: get_all_project_pages failed: %s", exc)
+        project_pages = []
+
+    # 6C: collect all tasks
+    try:
+        from collectors.collect_tasks import get_all_tasks
+        all_tasks = get_all_tasks()
+    except Exception as exc:
+        log.warning("Stage 6: get_all_tasks failed: %s", exc)
+        all_tasks = []
+
+    # 6D: collect calendar
+    try:
+        from collectors.collect_calendar import get_tomorrow_events
+        calendar_events = get_tomorrow_events()
+    except Exception as exc:
+        log.warning("Stage 6: get_tomorrow_events failed: %s", exc)
+        calendar_events = []
+
+    general_context = (data.get("context") or {}).get("general", "")
+
+    # 6E: per-project LLM calls
+    from pipeline.daily_planner import plan_tomorrow
+    plan = plan_tomorrow(
+        projects=project_pages,
+        all_tasks=all_tasks,
+        weekly_plan=weekly_plan,
+        today_result=result,
+        calendar_events=calendar_events,
+        general_context=general_context,
+        detail=detail,
+    )
+    log.info("Stage 6: %d project(s) planned for %s", len(plan), tomorrow)
+
+    # 6F: send / print
+    if dry_run:
+        formatted = format_daily_plan_message(plan, tomorrow)
+        try:
+            from rich.console import Console
+            Console().print(formatted)
+        except ImportError:
+            print(formatted)
+    else:
+        send_daily_plan(plan, tomorrow)
+
+
 # ── Stage 5: Deliver ──────────────────────────────────────────────────────────
 
 def _deliver(result: dict, date: datetime.date) -> bool:
@@ -529,6 +617,13 @@ def run(
         else:
             ok = _deliver(result, date)
             exit_code = 0 if ok else 2
+
+        # ── 6. Daily Plan ─────────────────────────────────────────────────────
+        try:
+            _plan_tomorrow(result, date, data, dry_run=dry_run)
+        except Exception as exc:
+            log.error("Stage 6 failed: %s", exc)
+            # Non-fatal — exit_code unchanged
 
         elapsed = time.monotonic() - t_pipeline
         log.info("Pipeline finished in %.1fs  exit_code=%d", elapsed, exit_code)
