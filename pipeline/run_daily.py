@@ -341,9 +341,23 @@ def _write_notion(result: dict, date: datetime.date, data: dict | None = None) -
             except Exception as exc2:
                 log.warning("Notion fallback plan write failed: %s", exc2)
 
-    # ── Write today's actual + optional task completion count ─────────────────
-    # Deferred until user approves via Telegram (pending_summary flow).
-    log.info("Notion actual write deferred until summary approval")
+    # ── Write today's actual ──────────────────────────────────────────────────
+    classification = result.get("classification") or {}
+    # Use the pending summary's current if classification isn't directly on result
+    done = result.get("done") or []
+    unfinished = result.get("unfinished") or []
+    unclassified = result.get("unclassified_activities") or result.get("unclassified") or []
+    classification_for_notion = {
+        "done": done,
+        "unfinished": unfinished,
+        "unclassified": unclassified,
+    }
+    try:
+        from pipeline.notion_sync import write_classification_to_notion
+        write_classification_to_notion(classification_for_notion, date)
+        log.info("Notion actual written immediately for %s", date)
+    except Exception as exc:
+        log.warning("Notion actual write failed: %s", exc)
 
 
 # ── Task checklist formatter (Task 5A) ───────────────────────────────────────
@@ -471,7 +485,13 @@ def _deliver(result: dict, date: datetime.date) -> bool:
     log.info("=== Stage 5: Deliver ===")
     try:
         from delivery.telegram_send import send_classification
-        footer = "\n\n_Reply to edit items, or say *approve* to save to Notion._"
+        from config_loader import get_config
+        cfg = get_config()
+        base_url = cfg.get("web_base_url", "").rstrip("/")
+        ui_link = f"{base_url}/review/{date}" if base_url else ""
+        footer = "\n\n_Reply to edit items\\._"
+        if ui_link:
+            footer += f"\n[Edit in UI]({ui_link})"
         send_classification(result, date, footer=footer)
         log.info("Telegram delivery OK")
         return True
