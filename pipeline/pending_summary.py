@@ -126,11 +126,11 @@ def get_current(date: datetime.date | None = None) -> dict | None:
 
 
 def is_expired(date: datetime.date | None = None) -> bool:
-    """True if created_at is older than 36 hours AND status != approved."""
+    """True if created_at is older than 36 hours AND status not in approved/reviewed."""
     record = load_pending(date)
     if not record:
         return False
-    if record.get("status") == "approved":
+    if record.get("status") in ("approved", "reviewed"):
         return False
     created_at = record.get("created_at", "")
     try:
@@ -251,8 +251,8 @@ def apply_edit(edit_instruction: str, date: datetime.date | None = None) -> dict
     if not record:
         raise ValueError(f"No pending summary for {date}")
 
-    if record.get("status") != "awaiting_approval":
-        raise ValueError(f"Pending summary for {date} is not awaiting approval")
+    if record.get("status") not in ("active", "awaiting_approval"):
+        raise ValueError(f"Pending summary for {date} is not active or awaiting approval")
 
     current = copy.deepcopy(record["current"])
     version = int(record.get("version", 1))
