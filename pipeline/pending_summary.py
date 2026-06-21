@@ -97,7 +97,7 @@ def _write_file(record: dict, date: datetime.date) -> None:
 
 
 def save_pending(classification: dict, date: datetime.date | None = None) -> None:
-    """Create pending file. version=1, status=awaiting_approval."""
+    """Create pending file. version=1, status=active."""
     date = _resolve_date(date)
     record = {
         "date": date.isoformat(),
