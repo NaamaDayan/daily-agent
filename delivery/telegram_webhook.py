@@ -91,30 +91,6 @@ def _format_actual_text(classification: dict) -> str:
     )
 
 
-def _write_approved_to_notion(classification: dict, date: datetime.date | None = None) -> None:
-    """Mark done tasks in Notion and write actual to the daily page."""
-    from collectors.collect_tasks import mark_task_done
-    from context.update_context import upsert_daily_entry
-
-    today = date or datetime.date.today()
-
-    for task in classification.get("done") or []:
-        page_id = task.get("page_id")
-        if not page_id:
-            continue
-        try:
-            mark_task_done(page_id)
-        except Exception as exc:
-            log.warning(
-                "mark_task_done failed for %s: %s",
-                page_id[:8] if page_id else "?", exc,
-            )
-
-    try:
-        upsert_daily_entry(today, actual=_format_actual_text(classification))
-    except Exception as exc:
-        log.warning("upsert_daily_entry failed for %s: %s", today, exc)
-
 
 def _classification_for_telegram(
     classification: dict,
@@ -145,14 +121,19 @@ def _apply_edit_and_show(
 ) -> str:
     from pipeline import pending_summary
     from delivery.telegram_send import format_classification_message, send_classification
+    from pipeline.notion_sync import write_classification_to_notion
 
     updated = pending_summary.apply_edit(instruction, date)
     record = pending_summary.load_pending(date) or pending
     version = record.get("version", 1)
     payload = _classification_for_telegram(updated, record)
+    # Sync to Notion after each edit
+    try:
+        write_classification_to_notion(updated, date)
+    except Exception as exc:
+        log.warning("Notion sync after edit failed: %s", exc)
     footer = (
-        f"\n\n_Edit applied (v{version}). Reply to keep editing, "
-        "or say approve to save._"
+        f"\n\n_Edit applied \\(v{version}\\)\\. Reply to keep editing\\._"
     )
     try:
         send_classification(payload, date, footer=footer)
@@ -166,8 +147,9 @@ def _execute_approval(pending: dict, date: datetime.date) -> str:
     from pipeline import pending_summary
     from delivery.telegram_send import send_text
     from config_loader import get_config
+    from pipeline.notion_sync import write_classification_to_notion
 
-    approved = pending_summary.save_approved(date)
+    approved = pending_summary.save_reviewed(date)
     current = approved.get("current") or {}
 
     cfg = get_config()
@@ -178,7 +160,10 @@ def _execute_approval(pending: dict, date: datetime.date) -> str:
             date=date,
         )
 
-    _write_approved_to_notion(current, date)
+    try:
+        write_classification_to_notion(current, date)
+    except Exception as exc:
+        log.warning("Notion write on approval failed: %s", exc)
 
     done_names = [t.get("task_name", "") for t in current.get("done") or []]
     open_names = [t.get("task_name", "") for t in current.get("unfinished") or []]
@@ -215,7 +200,7 @@ def handle_approval_reply(
     if pending is None:
         return "No pending summary found for today. Run /summary to regenerate."
 
-    if pending.get("status") == "approved":
+    if pending.get("status") in ("approved", "reviewed"):
         return "Summary already approved for this date."
 
     if pending_summary.is_expired(date):
