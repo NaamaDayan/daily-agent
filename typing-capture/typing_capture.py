@@ -122,9 +122,8 @@ class TypingCapture:
         if val and not was_pw:
             # Just switched into a password field — discard partial buffer
             app, bundle, window = self.get_ctx()
-            k = f"{bundle}|{window}"
             with self._lock:
-                self._buf.pop(k, None)
+                self._buf.pop(bundle, None)
 
     # ── Keystroke handler ─────────────────────────────────────────────────
 
@@ -133,7 +132,7 @@ class TypingCapture:
             return
 
         app, bundle, window = self.get_ctx()
-        k = f"{bundle}|{window}"
+        k = bundle  # key by app only — window title changes must not split sentences
 
         if keycode in (KEY_DEL, KEY_FWD_DEL):
             with self._lock:
@@ -211,13 +210,13 @@ class TypingCapture:
             self._write(to_write)
 
     def on_app_switch(self, prev_app: str, prev_bundle: str, prev_window: str) -> None:
-        k = f"{prev_bundle}|{prev_window}"
+        k = prev_bundle
         self._flush(k, "app_switch", prev_app, prev_bundle, prev_window, clear=True)
 
     def on_periodic(self) -> None:
         """Snapshot current buffer without clearing it (long-form writing)."""
         app, bundle, window = self.get_ctx()
-        k = f"{bundle}|{window}"
+        k = bundle
         with self._lock:
             text = self._buf.get(k, "")
         text = text.strip()
@@ -360,20 +359,22 @@ def _is_password_field() -> bool:
 # ── Background threads ────────────────────────────────────────────────────
 
 def _app_watcher() -> None:
-    """Polls frontmost app every APP_POLL_SECS. Flushes on switch."""
-    prev = ("", "", "")  # (name, bundle, window)
+    """Polls frontmost app every APP_POLL_SECS. Flushes only on bundle (app) switch."""
+    prev_bundle = ""
+    prev_name   = ""
     while True:
         time.sleep(APP_POLL_SECS)
         try:
             name, bundle, pid = _frontmost()
             window = _window_title(pid)
-            cur    = (name, bundle, window)
-            if cur != prev:
-                pname, pbundle, pwindow = prev
-                if pbundle:
-                    capture.on_app_switch(pname, pbundle, pwindow)
-                capture.set_ctx(name, bundle, window)
-                prev = cur
+            # Always update window title in context (for metadata) without flushing
+            capture.set_ctx(name, bundle, window)
+            # Only flush when the actual app (bundle) changes
+            if bundle != prev_bundle:
+                if prev_bundle:
+                    capture.on_app_switch(prev_name, prev_bundle, window)
+                prev_bundle = bundle
+                prev_name   = name
             # Refresh password-field cache on every poll (catches intra-app focus moves)
             capture.set_password(_is_password_field())
         except Exception as e:
