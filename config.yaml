@@ -7,6 +7,11 @@ anthropic_model: "claude-sonnet-4-6"
 anthropic_max_tokens: 2500
 anthropic_cursor_presummary_model: "claude-haiku-4-5-20251001"  # cheaper model for Stage 1A
 anthropic_cursor_presummary_max_tokens: 200
+weekly_summary_model: "claude-haiku-4-5-20251001"
+weekly_planner_model: "claude-sonnet-4-6"
+daily_planner_model: "claude-haiku-4-5-20251001"   # cheaper model for Stage 6
+daily_planner_max_tokens: 1000
+weekly_planner_max_tokens: 1000
 
 
 # Classification thresholds (pipeline/classifier.py)
@@ -43,10 +48,15 @@ notion_general_context_page_title: "General Context"
 telegram_bot_token: "8944063258:AAFde4YCBs5SQuzO81RBTVbs_Ss9A8I65Cc"          # from @BotFather
 telegram_chat_id: "972428891"            # your personal chat ID (get from @userinfobot)
 
+# ── Web review UI ──────────────────────────────────────────────────────────────
+web_port: 8080
+web_base_url: ""
+
 # ── Paths ──────────────────────────────────────────────────────────────────────
 typing_log_dir: "~/typing-logs"
 plans_dir: "~/.daily-agent/plans"
 learning_dir: "~/.daily-agent/learning"
+weekly_plans_dir: "~/.daily-agent/weekly-plans"
 learning_few_shot_count: 5      # how many past days to inject as examples
 learning_enabled: true
 agent_log_dir: "~/daily-agent/logs"

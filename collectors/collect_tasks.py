@@ -273,6 +273,33 @@ def get_this_week_tasks(date: datetime.date | None = None) -> list[dict]:
         return []
 
 
+def get_all_tasks(project_name: str | None = None) -> list[dict]:
+    """
+    Return all non-Done tasks from the Tasks DB.
+
+    If project_name is given, filter to tasks where project matches
+    (case-insensitive). Useful for per-project daily planning context.
+    """
+    cfg = get_config()
+    db_id: str = cfg["notion_tasks_db_id"]
+    filter_body = {
+        "property": "Status",
+        "select": {"does_not_equal": "✅ Done"},
+    }
+    sorts = [{"property": "Priority", "direction": "ascending"}]
+    try:
+        pages = _query_all(db_id, filter_body, sorts)
+        tasks = [_page_to_task(p) for p in pages]
+        if project_name:
+            target = project_name.strip().lower()
+            tasks = [t for t in tasks if t["project"].strip().lower() == target]
+        log.info("get_all_tasks(project=%r): %d task(s)", project_name, len(tasks))
+        return tasks
+    except Exception as exc:
+        log.warning("get_all_tasks failed: %s", exc)
+        return []
+
+
 def format_active_projects_prompt(active_projects: list[dict]) -> str:
     """
     Render active Notion projects for LLM prompts (goal + current focus per project).
